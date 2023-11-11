@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from hello_world import app
+from isi_bible_verse_devo_gpt import app
 
 
 @pytest.fixture()
