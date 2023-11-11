@@ -36,7 +36,7 @@ Resources:
   ISIBibleVerseDevoGPTFunctionScheduler:
     Type: AWS::Scheduler::Schedule
     Properties:
-      ScheduleExpression: cron(0 00 14 ? * * *)
+      ScheduleExpression: cron(00 14 * * ? *)
       FlexibleTimeWindow:
         Mode: FLEXIBLE
         MaximumWindowInMinutes: 1
