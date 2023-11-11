@@ -33,36 +33,3 @@ Resources:
       UpdateReplacePolicy: Delete
       Properties:
         LogGroupName: !Sub /aws/lambda/${ISIBibleVerseDevoGPTFunction}
-  ISIBibleVerseDevoGPTFunctionScheduler:
-    Type: AWS::Scheduler::Schedule
-    Properties:
-      ScheduleExpression: cron(00 14 * * ? *)
-      FlexibleTimeWindow:
-        Mode: FLEXIBLE
-        MaximumWindowInMinutes: 1
-      Target:
-        Arn: !GetAtt ISIBibleVerseDevoGPTFunction.Arn
-        RoleArn: !GetAtt ISIBibleVerseDevoGPTFunctionSchedulerToISIBibleVerseDevoGPTFunctionRole.Arn
-  ISIBibleVerseDevoGPTFunctionSchedulerToISIBibleVerseDevoGPTFunctionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          Effect: Allow
-          Principal:
-            Service: !Sub scheduler.${AWS::URLSuffix}
-          Action: sts:AssumeRole
-          Condition:
-            ArnLike:
-              aws:SourceArn: !Sub
-                - arn:${AWS::Partition}:scheduler:${AWS::Region}:${AWS::AccountId}:schedule/*/${AWS::StackName}-${ResourceId}-*
-                - ResourceId: ISIBibleVerseDevoGPTFunctionScheduler
-      Policies:
-        - PolicyName: StartExecutionPolicy
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action: lambda:InvokeFunction
-                Resource: !GetAtt ISIBibleVerseDevoGPTFunction.Arn

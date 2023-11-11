@@ -1,4 +1,5 @@
 import json
+import time
 from openai import OpenAI
 import boto3
 from boto3.dynamodb.conditions import Attr
@@ -63,12 +64,7 @@ def lambda_handler(event, context):
         thread_id=openai_thread_id_isidevogpt,
         assistant_id=openai_assistant_100_id
     )
-
-    # retreive the run
-    run_results = openai_client.beta.threads.runs.retrieve(
-        thread_id=openai_thread_id_isidevogpt,
-        run_id=run.id
-    )
+    time.sleep(15)
 
     #get the messages list
     messages = openai_client.beta.threads.messages.list(
