@@ -1,10 +1,9 @@
-import json
-import time
 from openai import OpenAI
 import boto3
 from boto3.dynamodb.conditions import Attr
 from twilio.rest import Client
 import logging
+from datetime import date,datetime
 
 logger = logging.getLogger(__name__)
 
@@ -29,14 +28,6 @@ def lambda_handler(event, context):
     openai_organization_id = ssm.get_parameter(
             Name='/openai/isi_devo_gpt/organization_id',
         )['Parameter']['Value']
-
-    openai_thread_id_isidevogpt = ssm.get_parameter(
-            Name='/openai/isi_devo_gpt/thread_id_isidevogpt',
-        )['Parameter']['Value']
-    
-    openai_assistant_100_id = ssm.get_parameter(
-            Name='/openai/isi_devo_gpt/assistant_100',
-        )['Parameter']['Value']
     
     openai_api_key = ssm.get_parameter(
             Name='/openai/isi_devo_gpt/api_key',
@@ -49,50 +40,37 @@ def lambda_handler(event, context):
         api_key=openai_api_key
     )
 
-    #get ongoing dev thread
-    my_thread = openai_client.beta.threads.retrieve(thread_id=openai_thread_id_isidevogpt)
-
-    # create a new message to get the next devo
-    thread_message = openai_client.beta.threads.messages.create(
-        thread_id=openai_thread_id_isidevogpt,
-        role="user",
-        content="Please share the next devotional message.",
-    )
-
-    # create the run
-    run = openai_client.beta.threads.runs.create(
-        thread_id=openai_thread_id_isidevogpt,
-        assistant_id=openai_assistant_100_id
-    )
-    time.sleep(15)
-
-    #get the messages list
-    messages = openai_client.beta.threads.messages.list(
-        thread_id=openai_thread_id_isidevogpt
-    )
-
-    # isolate the output
-    output = messages.data[0].content[0].text.value
-    print(output)
-
     # create Twilio client
     twilio_client = Client(twilio_account_sid, twilio_auth_token)
 
     # Get subscribers
-    #dynamodb = boto3.resource('dynamodb')
-    #clients_table = dynamodb.Table('isi-bible-verse-clients-db3-dev')
+    dynamodb = boto3.resource('dynamodb')
+    clients_table = dynamodb.Table('isi-bible-verse-clients-db3-dev')
     # scan for only subscribers to daily-devo and pull out their phone numbers
-    #subscribers = clients_table.scan(FilterExpression=Attr('current_status').eq('DAILY-DEVO')|Attr('current_status').eq('ALL'))
-    #subscriber_numbers = [k['phone_number'] for k in subscribers['Items']]
+    subscribers = clients_table.scan(FilterExpression=Attr('current_status').eq('DAILY-SMS')|Attr('current_status').eq('ALL'))
+    subscriber_numbers = [k['phone_number'] for k in subscribers['Items']]
     
-    subscriber_numbers = ['14802088265']
+    #subscriber_numbers = ['14802088265']
+
+    #get verse
+    verses_table = dynamodb.Table('isi-bible-verses-db-v2')
+    #scan for the next verse
+    delta = (datetime.today().date() - date(2023,11,22)).days
+    verses = verses_table.scan(FilterExpression=Attr('Order').eq((delta % 215) + 1))
+
+    #pick subject, copy, and verse
+    subject = verses['Items'][0]['Subject']
+    copy = verses['Items'][0]['Copy']
+    verse = verses['Items'][0]['Verse']
+
+    devo_msg = get_devo(openai_client, subject, verse, copy)
 
     # send messages
     for phone_num in subscriber_numbers:
         try: 
             message = twilio_client.messages.create(
                     messaging_service_sid='MGe8378c0c9e461b6c628995ba22ed4444',
-                    body='[Iron Sharpens Iron - Men\'s Ministry]\n{}\n"STOP-SERVICES" to unsubscribe. Try "DAILY-IMAGE", "DAILY-SMS", "HOPE-SMS"'.format(output),
+                    body='[Iron Sharpens Iron - Men\'s Ministry]\n{}:\n{}\n{}\n\n{}\n"STOP-SERVICES" to unsubscribe. Try "DAILY-IMAGE" or "HOPE-SMS"'.format(subject, copy, verse, devo_msg),
                     send_as_mms=True,
                     to=phone_num
             )
@@ -107,3 +85,30 @@ def lambda_handler(event, context):
     return {
         'statusCode': 200
     }
+
+
+def get_devo(openai_client, subject, verse, copy):
+    # This code is for v1 of the openai package: pypi.org/project/openai
+
+    response = openai_client.chat.completions.create(
+    model="gpt-4-1106-preview",
+    messages=[
+        {
+        "role": "system",
+        "content": "You are an experienced Christian leader."
+        },
+        {
+        "role": "user",
+        "content": f"Short devotional (max 7 sentences) for men on: Subject: {subject},\
+                    Verse: {copy} {verse}"
+        }
+    ],
+    temperature=1,
+    max_tokens=512,
+    top_p=1,
+    frequency_penalty=0,
+    presence_penalty=0
+    )
+
+    devo_msg = response.choices[0].message.content
+    return devo_msg
