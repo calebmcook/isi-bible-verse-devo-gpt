@@ -68,7 +68,7 @@ def lambda_handler(event, context):
         try: 
             message = twilio_client.messages.create(
                     messaging_service_sid='MGe8378c0c9e461b6c628995ba22ed4444',
-                    body='[Iron Sharpens Iron - Men\'s Ministry]\n{}:\n{}\n{}\n\n{}\n"STOP-SERVICES" to unsubscribe. Try "DAILY-IMAGE" or "HOPE-SMS"'.format(subject, copy, verse, devo_msg),
+                    body='[Iron Sharpens Iron - Men\'s Ministry]\n\n{}:\n{}\n{}\n\n{}\n\n"STOP-SERVICES" to unsubscribe. Try "DAILY-IMAGE" or "HOPE-SMS"'.format(subject, copy, verse, devo_msg),
                     send_as_mms=True,
                     to=phone_num
             )
