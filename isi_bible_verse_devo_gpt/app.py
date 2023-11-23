@@ -50,8 +50,6 @@ def lambda_handler(event, context):
     subscribers = clients_table.scan(FilterExpression=Attr('current_status').eq('DAILY-SMS')|Attr('current_status').eq('ALL'))
     subscriber_numbers = [k['phone_number'] for k in subscribers['Items']]
     
-    #subscriber_numbers = ['14802088265']
-
     #get verse
     verses_table = dynamodb.Table('isi-bible-verses-db-v2')
     #scan for the next verse
