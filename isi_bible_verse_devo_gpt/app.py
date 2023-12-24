@@ -24,10 +24,6 @@ def lambda_handler(event, context):
     openai_organization_id = ssm.get_parameter(
         Name='/openai/isi_devo_gpt/organization_id',
     )['Parameter']['Value']
-
-    openai_organization_id = ssm.get_parameter(
-            Name='/openai/isi_devo_gpt/organization_id',
-        )['Parameter']['Value']
     
     openai_api_key = ssm.get_parameter(
             Name='/openai/isi_devo_gpt/api_key',
