@@ -21,20 +21,20 @@ def lambda_handler(event, context):
         WithDecryption=True
     )['Parameter']['Value']
 
-    openai_organization_id = ssm.get_parameter(
-        Name='/openai/isi_devo_gpt/organization_id',
-    )['Parameter']['Value']
+    # openai_organization_id = ssm.get_parameter(
+    #     Name='/openai/isi_devo_gpt/organization_id',
+    # )['Parameter']['Value']
     
-    openai_api_key = ssm.get_parameter(
-            Name='/openai/isi_devo_gpt/api_key',
-            WithDecryption=True
-        )['Parameter']['Value']
+    # openai_api_key = ssm.get_parameter(
+    #         Name='/openai/isi_devo_gpt/api_key',
+    #         WithDecryption=True
+    #     )['Parameter']['Value']
 
-    # start OpenAI interaction
-    openai_client = OpenAI(
-        organization=openai_organization_id,
-        api_key=openai_api_key
-    )
+    # # start OpenAI interaction
+    # openai_client = OpenAI(
+    #     organization=openai_organization_id,
+    #     api_key=openai_api_key
+    # )
 
     # create Twilio client
     twilio_client = Client(twilio_account_sid, twilio_auth_token)
@@ -57,14 +57,15 @@ def lambda_handler(event, context):
     copy = verses['Items'][0]['Copy']
     verse = verses['Items'][0]['Verse']
 
-    devo_msg = get_devo(openai_client, subject, verse, copy)
+    #devo_msg = get_devo(openai_client, subject, verse, copy)
 
     # send messages
     for phone_num in subscriber_numbers:
         try: 
             message = twilio_client.messages.create(
                     messaging_service_sid='MGe8378c0c9e461b6c628995ba22ed4444',
-                    body='[Iron Sharpens Iron - Men\'s Ministry]\n\n{}:\n{}\n{}\n\n{}\n\n"STOP-SERVICES" to unsubscribe. Try "DAILY-IMAGE" or "HOPE-SMS"'.format(subject, copy, verse, devo_msg),
+                    body='[Iron Sharpens Iron - Men\'s Ministry]\n\n{}:\n{}\n{}\n\n"STOP-SERVICES" to unsubscribe. "DAILY-SMS" to subscribe'.format(subject, copy, verse),
+                    #body='[Iron Sharpens Iron - Men\'s Ministry]\n\n{}:\n{}\n{}\n\n{}\n\n"STOP-SERVICES" to unsubscribe. "DAILY-SMS" to subscribe'.format(subject, copy, verse, devo_msg),
                     send_as_mms=True,
                     to=phone_num
             )
@@ -81,28 +82,28 @@ def lambda_handler(event, context):
     }
 
 
-def get_devo(openai_client, subject, verse, copy):
-    # This code is for v1 of the openai package: pypi.org/project/openai
+# def get_devo(openai_client, subject, verse, copy):
+#     # This code is for v1 of the openai package: pypi.org/project/openai
 
-    response = openai_client.chat.completions.create(
-    model="gpt-4-1106-preview",
-    messages=[
-        {
-        "role": "system",
-        "content": "You are an experienced Christian leader."
-        },
-        {
-        "role": "user",
-        "content": f"Short devotional (max 7 sentences) for men on: Subject: {subject},\
-                    Verse: {copy} {verse}"
-        }
-    ],
-    temperature=1,
-    max_tokens=512,
-    top_p=1,
-    frequency_penalty=0,
-    presence_penalty=0
-    )
+#     response = openai_client.chat.completions.create(
+#     model="gpt-4-1106-preview",
+#     messages=[
+#         {
+#         "role": "system",
+#         "content": "You are an experienced Christian leader."
+#         },
+#         {
+#         "role": "user",
+#         "content": f"Short devotional (max 7 sentences) for men on: Subject: {subject},\
+#                     Verse: {copy} {verse}"
+#         }
+#     ],
+#     temperature=1,
+#     max_tokens=512,
+#     top_p=1,
+#     frequency_penalty=0,
+#     presence_penalty=0
+#     )
 
-    devo_msg = response.choices[0].message.content
-    return devo_msg
+#     devo_msg = response.choices[0].message.content
+#     return devo_msg
